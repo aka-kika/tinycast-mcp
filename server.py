@@ -91,6 +91,21 @@ def _slug(name: str) -> str:
     return slug or "snippet"
 
 
+_FRONTMATTER_RE = re.compile(r"\A---[ \t]*\r?\n.*?\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
+
+
+def strip_frontmatter(text: str) -> str:
+    """Drop a leading frontmatter block from a snippet body.
+
+    serialize_snippet always writes frontmatter, so a body that already carries
+    one would produce a second block. parse_snippet_file only scans up to the
+    first closing delimiter, so that stray block would be swallowed into the
+    body and duplicated again on the next write. Stripping here makes writes
+    idempotent and heals files that already went wrong.
+    """
+    return _FRONTMATTER_RE.sub("", text, count=1)
+
+
 def serialize_snippet(name: str, text: str, keyword: Optional[str],
                       enabled: bool, show_confirmation: bool) -> str:
     lines = ["---", f'name: "{_escape(name)}"']
@@ -99,7 +114,7 @@ def serialize_snippet(name: str, text: str, keyword: Optional[str],
     lines.append(f"enabled: {'true' if enabled else 'false'}")
     lines.append(f"show_confirmation: {'true' if show_confirmation else 'false'}")
     lines.append("---")
-    return "\n".join(lines) + "\n" + text
+    return "\n".join(lines) + "\n" + strip_frontmatter(text)
 
 
 def parse_snippet_file(path: Path) -> dict:

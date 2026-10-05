@@ -74,6 +74,15 @@ with exactly the `\\ \" \n \r \t` escapes, lowercase booleans. This server write
 reads exactly that canonical form — files written here parse in the app, and files
 written by the app parse here.
 
+Writes are idempotent. If a body already carries a frontmatter block, it is stripped
+before the canonical one is written, so a `read_snippet` → `update_snippet` cycle
+cannot accumulate duplicate blocks. Files that already went wrong this way are healed
+on their next write.
+
+```bash
+uv run --script test_snippet_roundtrip.py   # 12 assertions, no dependencies needed
+```
+
 ## Behavior and limits
 
 - Deletes move files to `~/.Trash`. Nothing is hard-deleted.
